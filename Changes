@@ -1,0 +1,4 @@
+Revision history for perl module Test::Kit2
+
+2.00 2014-03-07
+    * Initial implementation heavily inspired by Test::Kit
