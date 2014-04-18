@@ -5,6 +5,6 @@ use warnings;
 
 use Test::Kit2;
 
-Test::Kit2->include('Test::Simple');
+Test::Kit2->include('Test::More');
 
 1;
