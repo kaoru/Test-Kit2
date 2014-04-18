@@ -2,10 +2,11 @@ package Test::Kit2;
 
 use strict;
 use warnings;
-
 use namespace::clean ();
 use Import::Into;
 use Module::Runtime 'use_module';
+use Storable; # we need to do evil evil things to rename!
+use Sub::Delete; # seriously, just don't look here!
 
 =head1 NAME
 
@@ -37,23 +38,23 @@ sub include {
     my $class = shift;
     my $to_include = shift;
 
-    if (ref($to_include) eq 'HASH') {
-        $class->_complex_include($to_include);
-    }
-    else {
-        $class->_simple_include($to_include);
+    if (!ref($to_include)) {
+        $to_include = { $to_include => {} };
     }
 
-    return;
-
+    return $class->_include($to_include);
 }
 
-sub _simple_include {
+sub _include {
     my $class = shift;
-    my $class_to_include = shift;
+    my $include_hashref = shift;
 
-    my $class_to_import_into = $class->_get_class_to_import_into();
-    use_module($class_to_include)->import::into($class_to_import_into);
+    my $target = $class->_get_class_to_import_into();
+
+    for my $pkg (sort keys %$include_hashref) {
+        my $fake_pkg = $class->_create_fake_package($pkg, $include_hashref->{$pkg});
+        $fake_pkg->import::into($target);
+    }
 
     return;
 }
@@ -82,6 +83,42 @@ sub _get_class_to_import_into {
     }
 
     die "Unable to find class to import into";
+}
+
+sub _create_fake_package {
+    my $class = shift;
+    my $pkg = shift;
+    my $pkg_include_hashref = shift;
+
+    my $fake_pkg = "Test::Kit::Fake::$pkg";
+
+    my %exclude = map { $_ => 1 } @{ $pkg_include_hashref->{exclude} || [] };
+    my %rename = %{ $pkg_include_hashref->{rename} || {} };
+
+    use_module($pkg)->import::into($fake_pkg);
+    my $functions_exported_by_pkg = namespace::clean->get_functions($fake_pkg);
+
+    {
+        no strict 'refs';
+        push @{ "$fake_pkg\::ISA" }, 'Exporter';
+        @{ "$fake_pkg\::EXPORT" } = (
+            (grep { !$exclude{$_} && !$rename{$_} } keys %$functions_exported_by_pkg),
+            (values %rename)
+        );
+
+        for my $from (sort keys %rename) {
+            my $to = $rename{$from};
+
+            local $Storable::Deparse = 1;
+            local $Storable::Eval = 1;
+
+            *{ "$fake_pkg\::$to" } = Storable::dclone(\&{ "$fake_pkg\::$from" });
+
+            delete_sub("$fake_pkg\::$from");
+        }
+    }
+
+    return $fake_pkg;
 }
 
 1;
