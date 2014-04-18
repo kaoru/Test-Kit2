@@ -34,6 +34,20 @@ In a module somewhere in your project...
 
 =cut
 
+# deep strucutre:
+#
+# my %collission_check_cache = (
+#     'MyTest::Awesome' => {
+#         'ok' => 'Test::More',
+#         'pass' => 'Test::More',
+#         'warnings_are' => 'Test::Warn',
+#         ...
+#     },
+#     ...
+# )
+#
+my %collission_check_cache;
+
 sub include {
     my $class = shift;
     my $to_include = shift;
@@ -98,13 +112,16 @@ sub _create_fake_package {
     use_module($pkg)->import::into($fake_pkg);
     my $functions_exported_by_pkg = namespace::clean->get_functions($fake_pkg);
 
+    my @functions_to_install = (
+        (grep { !$exclude{$_} && !$rename{$_} } keys %$functions_exported_by_pkg),
+        (values %rename)
+    );
+    $class->_check_collissions($pkg, \@functions_to_install);
+
     {
         no strict 'refs';
         push @{ "$fake_pkg\::ISA" }, 'Exporter';
-        @{ "$fake_pkg\::EXPORT" } = (
-            (grep { !$exclude{$_} && !$rename{$_} } keys %$functions_exported_by_pkg),
-            (values %rename)
-        );
+        @{ "$fake_pkg\::EXPORT" } = @functions_to_install;
 
         for my $from (sort keys %rename) {
             my $to = $rename{$from};
@@ -119,6 +136,28 @@ sub _create_fake_package {
     }
 
     return $fake_pkg;
+}
+
+sub _check_collissions {
+    my $class = shift;
+    my $pkg = shift;
+    my $functions_to_install = shift;
+
+    my $target = $class->_get_class_to_import_into();
+
+    for my $function (@$functions_to_install) {
+        if (exists $collission_check_cache{$target}{$function}) {
+            die sprintf("subroutine %s() already supplied by %s",
+                $function,
+                $collission_check_cache{$target}{$function}
+            );
+        }
+        else {
+            $collission_check_cache{$target}{$function} = $pkg;
+        }
+    }
+
+    return;
 }
 
 1;
