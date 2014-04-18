@@ -120,6 +120,8 @@ sub _create_fake_package {
 
     {
         no strict 'refs';
+        no warnings 'redefine';
+
         push @{ "$fake_pkg\::ISA" }, 'Exporter';
         @{ "$fake_pkg\::EXPORT" } = @functions_to_install;
 
@@ -146,10 +148,11 @@ sub _check_collissions {
     my $target = $class->_get_class_to_import_into();
 
     for my $function (@$functions_to_install) {
-        if (exists $collission_check_cache{$target}{$function}) {
-            die sprintf("subroutine %s() already supplied by %s",
+        if (exists $collission_check_cache{$target}{$function} && $collission_check_cache{$target}{$function} ne $pkg) {
+            die sprintf("subroutine %s() already supplied by %s into %s",
                 $function,
-                $collission_check_cache{$target}{$function}
+                $collission_check_cache{$target}{$function},
+                $target
             );
         }
         else {
