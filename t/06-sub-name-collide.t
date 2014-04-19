@@ -9,7 +9,7 @@ use Test::More;
 eval "use MyTest::SubNameCollide;";
 like(
     $@,
-    qr/\Qsubroutine ok() already supplied by Test::More\E/,
+    qr/\Qsubroutine ok() already supplied to MyTest::SubNameCollide by Test::More\E/,
     'sub name collission throws an exception'
 );
 

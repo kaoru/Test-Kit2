@@ -123,7 +123,7 @@ sub _create_fake_package {
     my $functions_exported_by_pkg = namespace::clean->get_functions($fake_pkg);
 
     my @functions_to_install = (
-        (grep { !$exclude{$_} && !$rename{$_} } keys %$functions_exported_by_pkg),
+        (grep { !$exclude{$_} && !$rename{$_} } sort keys %$functions_exported_by_pkg),
         (values %rename)
     );
     $class->_check_collissions($pkg, \@functions_to_install);
@@ -156,10 +156,10 @@ sub _check_collissions {
 
     for my $function (@$functions_to_install) {
         if (exists $collission_check_cache{$target}{$function} && $collission_check_cache{$target}{$function} ne $pkg) {
-            die sprintf("subroutine %s() already supplied by %s into %s",
+            die sprintf("subroutine %s() already supplied to %s by %s",
                 $function,
+                $target,
                 $collission_check_cache{$target}{$function},
-                $target
             );
         }
         else {
