@@ -70,6 +70,8 @@ sub _include {
         $fake_pkg->import::into($target);
     }
 
+    $class->_make_target_an_exporter($target);
+
     return;
 }
 
@@ -79,21 +81,20 @@ sub _get_class_to_import_into {
     # so, as far as I can tell, on Perl 5.14 and 5.16 at least, we have the
     # following callstack...
     #
-    # 1. Test::Kit2::_simple_include
-    # 2. Test::Kit2::include
-    # 3. (eval)
-    # 4. MyModule::BEGIN
-    # 5. (eval)
+    # 1. Test::Kit2
+    # 2. MyTest
+    # 3. main
+    # 4. main
+    # 5. main
     #
-    # ... and we want to get the package name "MyModule" out of there.
-    # So, let's look for the first occurrence of BEGIN or something!
+    # ... and we want to get the package name "MyTest" out of there.
+    # So let's look for the first non-Test::Kit2 result
 
-    my @begins = grep { m/::BEGIN$/ }
-                 map  { (caller($_))[3] }
-                 1 .. 20;
-
-    if ($begins[0] && $begins[0] =~ m/^ (.+) ::BEGIN $/msx) {
-        return $1;
+    for my $i (1 .. 20) {
+        my $caller_pkg = (caller($i))[0];
+        if ($caller_pkg ne 'Test::Kit2') {
+            return $caller_pkg;
+        }
     }
 
     die "Unable to find class to import into";
@@ -158,6 +159,21 @@ sub _check_collissions {
         else {
             $collission_check_cache{$target}{$function} = $pkg;
         }
+    }
+
+    return;
+}
+
+sub _make_target_an_exporter {
+    my $class = shift;
+    my $target = shift;
+
+    my @functions_to_install = sort keys %{ $collission_check_cache{$target} // {} };
+
+    {
+        no strict 'refs';
+        push @{ "$target\::ISA" }, 'Exporter';
+        @{ "$target\::EXPORT" } = @functions_to_install;
     }
 
     return;
