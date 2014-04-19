@@ -2,11 +2,16 @@ package Test::Kit2;
 
 use strict;
 use warnings;
+
+use Exporter;
 use namespace::clean ();
 use Import::Into;
 use Module::Runtime 'use_module';
 use Storable; # we need to do evil evil things to rename!
 use Sub::Delete; # seriously, just don't look here!
+
+use base 'Exporter';
+our @EXPORT = ('include');
 
 =head1 NAME
 
@@ -20,17 +25,15 @@ In a module somewhere in your project...
 
     use Test::Kit2;
 
-    Test::Kit2->include('Test::More');
-    Test::Kit2->include('Test::LongString');
+    include 'Test::More';
+    include 'Test::LongString';
 
-    Test::Kit2->include({
-        'Test::Warn' => {
-            exclude => [ 'warning_is' ],
-            renamed => {
-                'warning_like' => 'test_warn_warning_like'
-            },
-        }
-    });
+    include 'Test::Warn' => {
+        exclude => [ 'warning_is' ],
+        renamed => {
+            'warning_like' => 'test_warn_warning_like'
+        },
+    };
 
 =cut
 
@@ -49,14 +52,19 @@ In a module somewhere in your project...
 my %collission_check_cache;
 
 sub include {
-    my $class = shift;
-    my $to_include = shift;
+    my @to_include = @_;
 
-    if (!ref($to_include)) {
-        $to_include = { $to_include => {} };
+    my $class = __PACKAGE__;
+
+    my $include_hashref;
+    if (@to_include == 1) {
+        $include_hashref = { $to_include[0] => {} };
+    }
+    else {
+        $include_hashref = { @to_include };
     }
 
-    return $class->_include($to_include);
+    return $class->_include($include_hashref);
 }
 
 sub _include {

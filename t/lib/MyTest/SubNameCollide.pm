@@ -5,8 +5,8 @@ use warnings;
 
 use Test::Kit2;
 
-Test::Kit2->include('Test::More');
+include 'Test::More';
 
-Test::Kit2->include('Test::Simple');
+include 'Test::Simple';
 
 1;

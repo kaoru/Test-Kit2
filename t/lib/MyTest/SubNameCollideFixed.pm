@@ -5,12 +5,10 @@ use warnings;
 
 use Test::Kit2;
 
-Test::Kit2->include('Test::More');
+include 'Test::More';
 
-Test::Kit2->include({
-    'Test::Simple' => {
-        'rename' => { 'ok' => 'test_simple_ok' },
-    },
-});
+include 'Test::Simple' => {
+    'rename' => { 'ok' => 'test_simple_ok' },
+};
 
 1;
