@@ -7,8 +7,7 @@ use Exporter;
 use namespace::clean ();
 use Import::Into;
 use Module::Runtime 'use_module';
-use Storable; # we need to do evil evil things to rename!
-use Sub::Delete; # seriously, just don't look here!
+use Sub::Delete;
 
 use base 'Exporter';
 our @EXPORT = ('include');
@@ -139,10 +138,7 @@ sub _create_fake_package {
         for my $from (sort keys %rename) {
             my $to = $rename{$from};
 
-            local $Storable::Deparse = 1;
-            local $Storable::Eval = 1;
-
-            *{ "$fake_pkg\::$to" } = Storable::dclone(\&{ "$fake_pkg\::$from" });
+            *{ "$fake_pkg\::$to" } = \&{ "$fake_pkg\::$from" };
 
             delete_sub("$fake_pkg\::$from");
         }
