@@ -34,6 +34,10 @@ In a module somewhere in your project...
         },
     };
 
+    include 'List::Util' => {
+        import => [ 'min', 'max', 'shuffle' ],
+    };
+
 =cut
 
 # deep strucutre:
@@ -118,8 +122,9 @@ sub _create_fake_package {
 
     my %exclude = map { $_ => 1 } @{ $pkg_include_hashref->{exclude} || [] };
     my %rename = %{ $pkg_include_hashref->{rename} || {} };
+    my @import = @{ $pkg_include_hashref->{import} || [] };
 
-    use_module($pkg)->import::into($fake_pkg);
+    use_module($pkg)->import::into($fake_pkg, @import);
     my $functions_exported_by_pkg = namespace::clean->get_functions($fake_pkg);
 
     my @functions_to_install = (
