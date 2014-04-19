@@ -65,6 +65,8 @@ sub _include {
 
     my $target = $class->_get_class_to_import_into();
 
+    $class->_check_target_does_not_import($target);
+
     for my $pkg (sort keys %$include_hashref) {
         my $fake_pkg = $class->_create_fake_package($pkg, $include_hashref->{$pkg});
         $fake_pkg->import::into($target);
@@ -159,6 +161,19 @@ sub _check_collissions {
         else {
             $collission_check_cache{$target}{$function} = $pkg;
         }
+    }
+
+    return;
+}
+
+sub _check_target_does_not_import {
+    my $class = shift;
+    my $target = shift;
+
+    return if $collission_check_cache{$target}; # already checked
+
+    if ($target->can('import')) {
+        die "Package $target already has an import() sub";
     }
 
     return;
