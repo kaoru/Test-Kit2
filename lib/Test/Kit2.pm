@@ -16,16 +16,30 @@ our @EXPORT = ('include');
 
 Test::Kit2 - Build custom test packages with only the features you want
 
-=head1 SYNOPSIS
+=head1 DESCRIPTION
 
-In a module somewhere in your project...
+Test::Kit2 allows you to create a single module in your project which gives you
+access to all of the testing functions you want.
+
+Its primary goal is to reduce boilerplate code that is currently littering the
+top of all your test files.
+
+It also allows your testing to be more consistent; for example it becomes a
+trivial change to include Test::FailWarnings in all of your tests, and there is
+no danger that you forget to include it in a new test.
+
+=head1 SYNOPSIS
 
     package MyProject::Test;
 
     use Test::Kit2;
 
+    # Combine multiple modules' behaviour into one
+
     include 'Test::More';
     include 'Test::LongString';
+
+    # Exclude or rename exported subs
 
     include 'Test::Warn' => {
         exclude => [ 'warning_is' ],
@@ -33,6 +47,8 @@ In a module somewhere in your project...
             'warning_like' => 'test_warn_warning_like'
         },
     };
+
+    # Pass parameters through to import() directly
 
     include 'List::Util' => {
         import => [ 'min', 'max', 'shuffle' ],
