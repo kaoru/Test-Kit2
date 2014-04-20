@@ -226,7 +226,7 @@ sub _make_target_an_exporter {
 
     {
         no strict 'refs';
-        push @{ "$target\::ISA" }, 'Exporter';
+        push @{ "$target\::ISA" }, 'Test::Builder::Module';
         @{ "$target\::EXPORT" } = @functions_to_install;
     }
 
