@@ -134,7 +134,9 @@ sub _create_fake_package {
     my $package = shift;
     my $package_include_hashref = shift;
 
-    my $fake_package = "Test::Kit::Fake::$package";
+    my $target = $class->_get_package_to_import_into();
+
+    my $fake_package = "Test::Kit::Fake::$target\::$package";
 
     my %exclude = map { $_ => 1 } @{ $package_include_hashref->{exclude} || [] };
     my %rename = %{ $package_include_hashref->{rename} || {} };
