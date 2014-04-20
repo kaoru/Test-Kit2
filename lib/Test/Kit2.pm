@@ -74,13 +74,13 @@ sub _include {
     my $class = shift;
     my $include_hashref = shift;
 
-    my $target = $class->_get_class_to_import_into();
+    my $target = $class->_get_package_to_import_into();
 
     $class->_check_target_does_not_import($target);
 
-    for my $pkg (sort keys %$include_hashref) {
-        my $fake_pkg = $class->_create_fake_package($pkg, $include_hashref->{$pkg});
-        $fake_pkg->import::into($target);
+    for my $package (sort keys %$include_hashref) {
+        my $fake_package = $class->_create_fake_package($package, $include_hashref->{$package});
+        $fake_package->import::into($target);
     }
 
     $class->_make_target_an_exporter($target);
@@ -88,7 +88,7 @@ sub _include {
     return;
 }
 
-sub _get_class_to_import_into {
+sub _get_package_to_import_into {
     my $class = shift;
 
     # so, as far as I can tell, on Perl 5.14 and 5.16 at least, we have the
@@ -104,38 +104,38 @@ sub _get_class_to_import_into {
     # So let's look for the first non-Test::Kit2 result
 
     for my $i (1 .. 20) {
-        my $caller_pkg = (caller($i))[0];
-        if ($caller_pkg ne 'Test::Kit2') {
-            return $caller_pkg;
+        my $caller_package = (caller($i))[0];
+        if ($caller_package ne 'Test::Kit2') {
+            return $caller_package;
         }
     }
 
-    die "Unable to find class to import into";
+    die "Unable to find package to import into";
 }
 
 sub _create_fake_package {
     my $class = shift;
-    my $pkg = shift;
-    my $pkg_include_hashref = shift;
+    my $package = shift;
+    my $package_include_hashref = shift;
 
-    my $fake_pkg = "Test::Kit::Fake::$pkg";
+    my $fake_package = "Test::Kit::Fake::$package";
 
-    my %exclude = map { $_ => 1 } @{ $pkg_include_hashref->{exclude} || [] };
-    my %rename = %{ $pkg_include_hashref->{rename} || {} };
-    my @import = @{ $pkg_include_hashref->{import} || [] };
+    my %exclude = map { $_ => 1 } @{ $package_include_hashref->{exclude} || [] };
+    my %rename = %{ $package_include_hashref->{rename} || {} };
+    my @import = @{ $package_include_hashref->{import} || [] };
 
-    use_module($pkg)->import::into($fake_pkg, @import);
-    my $functions_exported_by_pkg = namespace::clean->get_functions($fake_pkg);
+    use_module($package)->import::into($fake_package, @import);
+    my $functions_exported_by_package = namespace::clean->get_functions($fake_package);
 
     my @functions_to_install = (
-        (grep { !$exclude{$_} && !$rename{$_} } sort keys %$functions_exported_by_pkg),
+        (grep { !$exclude{$_} && !$rename{$_} } sort keys %$functions_exported_by_package),
         (values %rename)
     );
 
-    my @non_functions_to_install = $class->_get_non_functions_from_pkg($pkg);
+    my @non_functions_to_install = $class->_get_non_functions_from_package($package);
 
     $class->_check_collissions(
-        $pkg,
+        $package,
         [
             @functions_to_install,
             @non_functions_to_install,
@@ -146,8 +146,8 @@ sub _create_fake_package {
         no strict 'refs';
         no warnings 'redefine';
 
-        push @{ "$fake_pkg\::ISA" }, 'Exporter';
-        @{ "$fake_pkg\::EXPORT" } = (
+        push @{ "$fake_package\::ISA" }, 'Exporter';
+        @{ "$fake_package\::EXPORT" } = (
             @functions_to_install,
             @non_functions_to_install
         );
@@ -155,24 +155,24 @@ sub _create_fake_package {
         for my $from (sort keys %rename) {
             my $to = $rename{$from};
 
-            *{ "$fake_pkg\::$to" } = \&{ "$fake_pkg\::$from" };
+            *{ "$fake_package\::$to" } = \&{ "$fake_package\::$from" };
 
-            delete_sub("$fake_pkg\::$from");
+            delete_sub("$fake_package\::$from");
         }
     }
 
-    return $fake_pkg;
+    return $fake_package;
 }
 
 sub _check_collissions {
     my $class = shift;
-    my $pkg = shift;
+    my $package = shift;
     my $functions_to_install = shift;
 
-    my $target = $class->_get_class_to_import_into();
+    my $target = $class->_get_package_to_import_into();
 
     for my $function (@$functions_to_install) {
-        if (exists $collission_check_cache{$target}{$function} && $collission_check_cache{$target}{$function} ne $pkg) {
+        if (exists $collission_check_cache{$target}{$function} && $collission_check_cache{$target}{$function} ne $package) {
             die sprintf("subroutine %s() already supplied to %s by %s",
                 $function,
                 $target,
@@ -180,7 +180,7 @@ sub _check_collissions {
             );
         }
         else {
-            $collission_check_cache{$target}{$function} = $pkg;
+            $collission_check_cache{$target}{$function} = $package;
         }
     }
 
@@ -215,9 +215,9 @@ sub _make_target_an_exporter {
     return;
 }
 
-sub _get_non_functions_from_pkg {
+sub _get_non_functions_from_package {
     my $class = shift;
-    my $pkg = shift;
+    my $package = shift;
 
     # Unfortunately we can't do the "correct" thing here, which would be to
     # walk the symbol table of the fake package to find the non-sub variables
@@ -226,7 +226,7 @@ sub _get_non_functions_from_pkg {
     # This is because the most common case we're trying to handle is the
     # '$TODO' variable from Test::More, but it's impossible to catch that in
     # the fake package symbol table because every symbol table entry has a
-    # scalar no matter what. ie the following two classes are indistinguishable:
+    # scalar no matter what. ie the following two packages are indistinguishable:
     #
     # 1.
     #     package foo;
@@ -251,7 +251,7 @@ sub _get_non_functions_from_pkg {
     my @package_export;
     {
         no strict 'refs';
-        @package_export = @{ "$pkg\::EXPORT" };
+        @package_export = @{ "$package\::EXPORT" };
     }
 
     for my $e (@package_export) {
