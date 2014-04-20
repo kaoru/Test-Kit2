@@ -30,6 +30,8 @@ no danger that you forget to include it in a new test.
 
 =head1 SYNOPSIS
 
+Somewhere in your project...
+
     package MyProject::Test;
 
     use Test::Kit2;
@@ -53,6 +55,29 @@ no danger that you forget to include it in a new test.
     include 'List::Util' => {
         import => [ 'min', 'max', 'shuffle' ],
     };
+
+And then in your test files...
+
+    use strict;
+    use warnings;
+
+    use MyProject::Test tests => 4;
+
+    ok 1, "1 is true";
+
+    like_string(
+        `cat /usr/share/dict/words`,
+        qr/^ kit $/imsx,
+        "kit is a word"
+    );
+
+    test_warn_warning_like {
+        warn "foo";
+    }
+    qr/FOO/i,
+    "warned foo";
+
+    is max(qw(1 2 3 4 5)), 5, 'maximum is 5';
 
 =cut
 
