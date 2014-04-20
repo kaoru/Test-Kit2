@@ -81,9 +81,9 @@ And then in your test files...
 
 =cut
 
-# deep strucutre:
+# deep structure:
 #
-# my %collission_check_cache = (
+# my %collision_check_cache = (
 #     'MyTest::Awesome' => {
 #         'ok' => 'Test::More',
 #         'pass' => 'Test::More',
@@ -93,7 +93,7 @@ And then in your test files...
 #     ...
 # )
 #
-my %collission_check_cache;
+my %collision_check_cache;
 
 sub include {
     my @to_include = @_;
@@ -177,7 +177,7 @@ sub _create_fake_package {
 
     my @non_functions_to_install = $class->_get_non_functions_from_package($package);
 
-    $class->_check_collissions(
+    $class->_check_collisions(
         $package,
         [
             @functions_to_install,
@@ -207,7 +207,7 @@ sub _create_fake_package {
     return $fake_package;
 }
 
-sub _check_collissions {
+sub _check_collisions {
     my $class = shift;
     my $package = shift;
     my $functions_to_install = shift;
@@ -215,15 +215,15 @@ sub _check_collissions {
     my $target = $class->_get_package_to_import_into();
 
     for my $function (@$functions_to_install) {
-        if (exists $collission_check_cache{$target}{$function} && $collission_check_cache{$target}{$function} ne $package) {
-            die sprintf("subroutine %s() already supplied to %s by %s",
+        if (exists $collision_check_cache{$target}{$function} && $collision_check_cache{$target}{$function} ne $package) {
+            die sprintf("Subroutine %s() already supplied to %s by %s",
                 $function,
                 $target,
-                $collission_check_cache{$target}{$function},
+                $collision_check_cache{$target}{$function},
             );
         }
         else {
-            $collission_check_cache{$target}{$function} = $package;
+            $collision_check_cache{$target}{$function} = $package;
         }
     }
 
@@ -234,7 +234,7 @@ sub _check_target_does_not_import {
     my $class = shift;
     my $target = shift;
 
-    return if $collission_check_cache{$target}; # already checked
+    return if $collision_check_cache{$target}; # already checked
 
     if ($target->can('import')) {
         die "Package $target already has an import() sub";
@@ -247,7 +247,7 @@ sub _make_target_an_exporter {
     my $class = shift;
     my $target = shift;
 
-    my @functions_to_install = sort keys %{ $collission_check_cache{$target} // {} };
+    my @functions_to_install = sort keys %{ $collision_check_cache{$target} // {} };
 
     {
         no strict 'refs';

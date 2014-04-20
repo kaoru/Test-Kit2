@@ -10,14 +10,14 @@ eval "use MyTest::SubNameCollide;";
 like(
     $@,
     qr/\Qsubroutine ok() already supplied to MyTest::SubNameCollide by Test::More\E/,
-    'sub name collission throws an exception'
+    'sub name collision throws an exception'
 );
 
 eval "use MyTest::SubNameCollideFixed; ok(1, 'ok() from Test::More'); test_simple_ok(1, 'test_simple_ok() from Test::Simple');";
 like(
     $@,
     qr//,
-    'sub name collission can be fixed by use of the rename feature'
+    'sub name collision can be fixed by use of the rename feature'
 );
 
 done_testing();
