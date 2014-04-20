@@ -101,11 +101,11 @@ sub include {
     my $class = __PACKAGE__;
 
     my $include_hashref;
-    if (@to_include == 1) {
-        $include_hashref = { $to_include[0] => {} };
+    if (grep { ref($_) } @to_include) {
+        $include_hashref = { @to_include };
     }
     else {
-        $include_hashref = { @to_include };
+        $include_hashref = { map { $_ => {} } @to_include };
     }
 
     return $class->_include($include_hashref);
