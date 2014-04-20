@@ -131,14 +131,26 @@ sub _create_fake_package {
         (grep { !$exclude{$_} && !$rename{$_} } sort keys %$functions_exported_by_pkg),
         (values %rename)
     );
-    $class->_check_collissions($pkg, \@functions_to_install);
+
+    my @non_functions_to_install = $class->_get_non_functions_from_pkg($pkg);
+
+    $class->_check_collissions(
+        $pkg,
+        [
+            @functions_to_install,
+            @non_functions_to_install,
+        ]
+    );
 
     {
         no strict 'refs';
         no warnings 'redefine';
 
         push @{ "$fake_pkg\::ISA" }, 'Exporter';
-        @{ "$fake_pkg\::EXPORT" } = @functions_to_install;
+        @{ "$fake_pkg\::EXPORT" } = (
+            @functions_to_install,
+            @non_functions_to_install
+        );
 
         for my $from (sort keys %rename) {
             my $to = $rename{$from};
@@ -201,6 +213,54 @@ sub _make_target_an_exporter {
     }
 
     return;
+}
+
+sub _get_non_functions_from_pkg {
+    my $class = shift;
+    my $pkg = shift;
+
+    # Unfortunately we can't do the "correct" thing here, which would be to
+    # walk the symbol table of the fake package to find the non-sub variables
+    # exported by the included package.
+    #
+    # This is because the most common case we're trying to handle is the
+    # '$TODO' variable from Test::More, but it's impossible to catch that in
+    # the fake package symbol table because every symbol table entry has a
+    # scalar no matter what. ie the following two classes are indistinguishable:
+    #
+    # 1.
+    #     package foo;
+    #     our $x = undef;
+    #     our @x = qw(a b c);
+    #
+    # 2.
+    #     package foo;
+    #     our @x = qw(a b c);
+    #
+    # One option would be to import '$VAR' if VAR is in the symbol table and
+    # has no CODE, ARRAY, or HASH entry. But that breaks down if a package is
+    # trying to export both '$VAR' and '@VAR'.
+    #
+    # So, instead of all that I'm going to simply assume that the package is an
+    # Exporter and walk its @EXPORT array for things which start with '$', '@'
+    # or '%'. This at least will work for the $Test::More::TODO case.
+    #
+
+    my @non_functions;
+
+    my @package_export;
+    {
+        no strict 'refs';
+        @package_export = @{ "$pkg\::EXPORT" };
+    }
+
+    for my $e (@package_export) {
+        if ($e =~ m/^[\$\@\%]/) {
+            push @non_functions, $e;
+        }
+    }
+
+    return @non_functions;
 }
 
 1;
