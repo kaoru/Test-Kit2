@@ -79,6 +79,36 @@ And then in your test files...
 
     is max(qw(1 2 3 4 5)), 5, 'maximum is 5';
 
+=head1 EXCEPTIONS
+
+=head2 Unable to find package to import into
+
+This means that Test::Kit2 was unable to determine which module include() was
+called from. It probably means you're doing something weird!
+
+If this is happening under any normal circumstances please file a bug report!
+
+=head2 Subroutine %s() already supplied to %s by %s
+
+This happens when there is a subroutine name collision. For example if you try
+to include both Test::Simple and Test::More in your Kit it will complain that
+ok() has been defined twice.
+
+You should be able to use the exclude or rename options to solve these
+collisions.
+
+=head2 Package %s already has an import() sub
+
+This happens when your module has an import subroutine before the first
+include() call. This could be because you have defined one, or because your
+module has inherited an import() subroutine through an ISA relationship.
+
+Test::Kit2 intends to install its own import method into your module,
+specifically it is going to install Test::Builder::Module's import() method.
+Test::Builder::Module is an Exporter, so if you want to define your own
+subroutines and export those you can push onto @EXPORT after all the calls to
+include().
+
 =cut
 
 # deep structure:
