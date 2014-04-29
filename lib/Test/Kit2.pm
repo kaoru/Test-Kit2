@@ -12,105 +12,6 @@ use Sub::Delete;
 use base 'Exporter';
 our @EXPORT = ('include');
 
-=head1 NAME
-
-Test::Kit2 - Build custom test packages with only the features you want
-
-=head1 DESCRIPTION
-
-Test::Kit2 allows you to create a single module in your project which gives you
-access to all of the testing functions you want.
-
-Its primary goal is to reduce boilerplate code that is currently littering the
-top of all your test files.
-
-It also allows your testing to be more consistent; for example it becomes a
-trivial change to include Test::FailWarnings in all of your tests, and there is
-no danger that you forget to include it in a new test.
-
-=head1 SYNOPSIS
-
-Somewhere in your project...
-
-    package MyProject::Test;
-
-    use Test::Kit2;
-
-    # Combine multiple modules' behaviour into one
-
-    include 'Test::More';
-    include 'Test::LongString';
-
-    # Exclude or rename exported subs
-
-    include 'Test::Warn' => {
-        exclude => [ 'warning_is' ],
-        renamed => {
-            'warning_like' => 'test_warn_warning_like'
-        },
-    };
-
-    # Pass parameters through to import() directly
-
-    include 'List::Util' => {
-        import => [ 'min', 'max', 'shuffle' ],
-    };
-
-And then in your test files...
-
-    use strict;
-    use warnings;
-
-    use MyProject::Test tests => 4;
-
-    ok 1, "1 is true";
-
-    like_string(
-        `cat /usr/share/dict/words`,
-        qr/^ kit $/imsx,
-        "kit is a word"
-    );
-
-    test_warn_warning_like {
-        warn "foo";
-    }
-    qr/FOO/i,
-    "warned foo";
-
-    is max(qw(1 2 3 4 5)), 5, 'maximum is 5';
-
-=head1 EXCEPTIONS
-
-=head2 Unable to find package to import into
-
-This means that Test::Kit2 was unable to determine which module include() was
-called from. It probably means you're doing something weird!
-
-If this is happening under any normal circumstances please file a bug report!
-
-=head2 Subroutine %s() already supplied to %s by %s
-
-This happens when there is a subroutine name collision. For example if you try
-to include both Test::Simple and Test::More in your Kit it will complain that
-ok() has been defined twice.
-
-You should be able to use the exclude or rename options to solve these
-collisions.
-
-=head2 Package %s already has an import() sub
-
-This happens when your module has an import subroutine before the first
-include() call. This could be because you have defined one, or because your
-module has inherited an import() subroutine through an ISA relationship.
-
-Test::Kit2 intends to install its own import method into your module,
-specifically it is going to install Test::Builder::Module's import() method.
-Test::Builder::Module is an Exporter, so if you want to define your own
-subroutines and export those you can push onto @EXPORT after all the calls to
-include().
-
-=cut
-
 # deep structure:
 #
 # my %collision_check_cache = (
@@ -337,3 +238,104 @@ sub _get_non_functions_from_package {
 }
 
 1;
+
+__END__
+
+=head1 NAME
+
+Test::Kit2 - Build custom test packages with only the features you want
+
+=head1 DESCRIPTION
+
+Test::Kit2 allows you to create a single module in your project which gives you
+access to all of the testing functions you want.
+
+Its primary goal is to reduce boilerplate code that is currently littering the
+top of all your test files.
+
+It also allows your testing to be more consistent; for example it becomes a
+trivial change to include Test::FailWarnings in all of your tests, and there is
+no danger that you forget to include it in a new test.
+
+=head1 SYNOPSIS
+
+Somewhere in your project...
+
+    package MyProject::Test;
+
+    use Test::Kit2;
+
+    # Combine multiple modules' behaviour into one
+
+    include 'Test::More';
+    include 'Test::LongString';
+
+    # Exclude or rename exported subs
+
+    include 'Test::Warn' => {
+        exclude => [ 'warning_is' ],
+        renamed => {
+            'warning_like' => 'test_warn_warning_like'
+        },
+    };
+
+    # Pass parameters through to import() directly
+
+    include 'List::Util' => {
+        import => [ 'min', 'max', 'shuffle' ],
+    };
+
+And then in your test files...
+
+    use strict;
+    use warnings;
+
+    use MyProject::Test tests => 4;
+
+    ok 1, "1 is true";
+
+    like_string(
+        `cat /usr/share/dict/words`,
+        qr/^ kit $/imsx,
+        "kit is a word"
+    );
+
+    test_warn_warning_like {
+        warn "foo";
+    }
+    qr/FOO/i,
+    "warned foo";
+
+    is max(qw(1 2 3 4 5)), 5, 'maximum is 5';
+
+=head1 EXCEPTIONS
+
+=head2 Unable to find package to import into
+
+This means that Test::Kit2 was unable to determine which module include() was
+called from. It probably means you're doing something weird!
+
+If this is happening under any normal circumstances please file a bug report!
+
+=head2 Subroutine %s() already supplied to %s by %s
+
+This happens when there is a subroutine name collision. For example if you try
+to include both Test::Simple and Test::More in your Kit it will complain that
+ok() has been defined twice.
+
+You should be able to use the exclude or rename options to solve these
+collisions.
+
+=head2 Package %s already has an import() sub
+
+This happens when your module has an import subroutine before the first
+include() call. This could be because you have defined one, or because your
+module has inherited an import() subroutine through an ISA relationship.
+
+Test::Kit2 intends to install its own import method into your module,
+specifically it is going to install Test::Builder::Module's import() method.
+Test::Builder::Module is an Exporter, so if you want to define your own
+subroutines and export those you can push onto @EXPORT after all the calls to
+include().
+
+=cut
