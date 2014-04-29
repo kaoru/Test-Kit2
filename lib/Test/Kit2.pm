@@ -3,7 +3,6 @@ package Test::Kit2;
 use strict;
 use warnings;
 
-use Exporter;
 use namespace::clean ();
 use Import::Into;
 use Module::Runtime 'use_module';
