@@ -338,4 +338,31 @@ Test::Builder::Module is an Exporter, so if you want to define your own
 subroutines and export those you can push onto @EXPORT after all the calls to
 include().
 
+=head1 ISSUES
+
+=head2 Non-subroutine Exports
+
+For subroutine exports we are able to know exactly what subroutines are
+exported by using a given module using a combination of Import::Into and
+namespace::clean. Unfortunately the same trick does not work for exported SCALARs.
+
+This is because the most common case we're trying to handle is the '$TODO'
+variable from Test::More, but it's impossible to catch that in the symbol table
+because every symbol table entry has a scalar no matter what. ie the following
+two packages are indistinguishable:
+
+    # One
+    package foo;
+    our $x = undef;
+    our @x = qw(a b c);
+
+    # Two
+    package foo;
+    our @x = qw(a b c);
+
+So, instead, Test::Kit2 simply assumes that the package is an Exporter and walks
+its @EXPORT array for things which start with '$', '@' or '%'.
+
+This at least works for the $Test::More::TODO case, which is the most common.
+
 =cut
