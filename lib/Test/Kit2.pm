@@ -8,7 +8,7 @@ use Import::Into;
 use Module::Runtime 'use_module';
 use Sub::Delete;
 
-use base 'Exporter';
+use parent 'Exporter';
 our @EXPORT = ('include');
 
 # deep structure:
