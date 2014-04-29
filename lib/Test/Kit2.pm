@@ -76,7 +76,7 @@ sub _get_package_to_import_into {
 
     for my $i (1 .. 20) {
         my $caller_package = (caller($i))[0];
-        if ($caller_package ne 'Test::Kit2') {
+        if ($caller_package ne $class) {
             return $caller_package;
         }
     }
