@@ -144,6 +144,7 @@ sub _check_collisions {
 
     my $target = $class->_get_package_to_import_into();
 
+    $collision_check_cache{$target} //= {};
     for my $function (@$functions_to_install) {
         if (exists $collision_check_cache{$target}{$function} && $collision_check_cache{$target}{$function} ne $package) {
             die sprintf("Subroutine %s() already supplied to %s by %s",
