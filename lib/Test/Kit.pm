@@ -375,6 +375,17 @@ its @EXPORT array for things which start with '$', '@' or '%'.
 
 This at least works for the $Test::More::TODO case, which is the most common.
 
+=head1 SEE ALSO
+
+A couple of other modules try to generalize this problem beyond the scope of testing:
+
+L<ToolSet> - Load your commonly-used modules in a single import
+
+L<Import::Base> - Import a set of modules into the calling module
+
+Test::Kit largely differs from these in that it always makes your module a
+Test::Builder::Module, so that it can behave like Test::More.
+
 =head1 AUTHOR
 
 Test::Kit 2.0 was written by Alex Balhatchet, C<< <kaoru at slackwise.net> >>
