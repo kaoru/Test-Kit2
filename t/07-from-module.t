@@ -2,7 +2,7 @@ use strict;
 use warnings;
 use lib 't/lib';
 
-# From Module - test that Test::Kit2 works in packages other than main
+# From Module - test that Test::Kit works in packages other than main
 
 use MyTest::FromModule;
 

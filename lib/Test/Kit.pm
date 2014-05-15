@@ -1,4 +1,4 @@
-package Test::Kit2;
+package Test::Kit;
 
 use strict;
 use warnings;
@@ -65,14 +65,14 @@ sub _get_package_to_import_into {
     # so, as far as I can tell, on Perl 5.14 and 5.16 at least, we have the
     # following callstack...
     #
-    # 1. Test::Kit2
+    # 1. Test::Kit
     # 2. MyTest
     # 3. main
     # 4. main
     # 5. main
     #
     # ... and we want to get the package name "MyTest" out of there.
-    # So let's look for the first non-Test::Kit2 result
+    # So let's look for the first non-Test::Kit result
 
     for my $i (1 .. 20) {
         my $caller_package = (caller($i))[0];
@@ -242,11 +242,11 @@ __END__
 
 =head1 NAME
 
-Test::Kit2 - Build custom test packages with only the features you want
+Test::Kit - Build custom test packages with only the features you want
 
 =head1 DESCRIPTION
 
-Test::Kit2 allows you to create a single module in your project which gives you
+Test::Kit allows you to create a single module in your project which gives you
 access to all of the testing functions you want.
 
 Its primary goal is to reduce boilerplate code that is currently littering the
@@ -256,13 +256,23 @@ It also allows your testing to be more consistent; for example it becomes a
 trivial change to include Test::FailWarnings in all of your tests, and there is
 no danger that you forget to include it in a new test.
 
+=head1 VERSION
+
+Test::Kit 2.0 is a complete rewrite of Test::Kit by a new author.
+
+It serves much the same purpose as the original Test::Kit, but comes with a
+completely new interface and some serious bugs ironed out.
+
+The 'features' such as '+explain' and '+on_fail' have been removed. If you were
+using these please contact me via rt.cpan.org.
+
 =head1 SYNOPSIS
 
 Somewhere in your project...
 
     package MyProject::Test;
 
-    use Test::Kit2;
+    use Test::Kit;
 
     # Combine multiple modules' behaviour into one
 
@@ -311,7 +321,7 @@ And then in your test files...
 
 =head2 Unable to find package to import into
 
-This means that Test::Kit2 was unable to determine which module include() was
+This means that Test::Kit was unable to determine which module include() was
 called from. It probably means you're doing something weird!
 
 If this is happening under any normal circumstances please file a bug report!
@@ -331,7 +341,7 @@ This happens when your module has an import subroutine before the first
 include() call. This could be because you have defined one, or because your
 module has inherited an import() subroutine through an ISA relationship.
 
-Test::Kit2 intends to install its own import method into your module,
+Test::Kit intends to install its own import method into your module,
 specifically it is going to install Test::Builder::Module's import() method.
 Test::Builder::Module is an Exporter, so if you want to define your own
 subroutines and export those you can push onto @EXPORT after all the calls to
@@ -343,7 +353,8 @@ include().
 
 For subroutine exports we are able to know exactly what subroutines are
 exported by using a given module using a combination of Import::Into and
-namespace::clean. Unfortunately the same trick does not work for exported SCALARs.
+namespace::clean. Unfortunately the same trick does not work for exported
+SCALARs.
 
 This is because the most common case we're trying to handle is the '$TODO'
 variable from Test::More, but it's impossible to catch that in the symbol table
@@ -359,9 +370,15 @@ two packages are indistinguishable:
     package foo;
     our @x = qw(a b c);
 
-So, instead, Test::Kit2 simply assumes that the package is an Exporter and walks
+So, instead, Test::Kit simply assumes that the package is an Exporter and walks
 its @EXPORT array for things which start with '$', '@' or '%'.
 
 This at least works for the $Test::More::TODO case, which is the most common.
+
+=head1 AUTHOR
+
+Test::Kit 2.0 was written by Alex Balhatchet, C<< <kaoru at slackwise.net> >>
+
+Test::Kit 0.101 and before were authored by Curtis "Ovid" Poe, C<< <ovid at cpan.org> >>
 
 =cut

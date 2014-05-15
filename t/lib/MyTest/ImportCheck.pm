@@ -5,7 +5,7 @@ use warnings;
 
 sub import { "foo" }
 
-use Test::Kit2;
+use Test::Kit;
 
 include 'Test::More';
 

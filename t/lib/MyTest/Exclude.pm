@@ -3,7 +3,7 @@ package MyTest::Exclude;
 use strict;
 use warnings;
 
-use Test::Kit2;
+use Test::Kit;
 
 include 'Test::More' => {
     exclude => [ 'pass', 'fail' ],

@@ -3,7 +3,7 @@ package MyTest::SubClassUser;
 use strict;
 use warnings;
 
-use MyTest::TestKit2SubClass;
+use MyTest::TestKitSubClass;
 
 include 'Test::More';
 

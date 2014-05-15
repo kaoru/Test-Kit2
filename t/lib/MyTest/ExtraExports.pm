@@ -3,7 +3,7 @@ package MyTest::ExtraExports;
 use strict;
 use warnings;
 
-use Test::Kit2;
+use Test::Kit;
 
 use Test::More;
 our @EXPORT;

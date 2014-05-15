@@ -1,4 +1,21 @@
-Revision history for perl module Test::Kit2
+Revision history for Test-Kit
 
-2.00 2014-03-07
-    * Initial implementation heavily inspired by Test::Kit
+2.00    2014-05-15
+        - Complete rewrite of Test::Kit by Alex Balhatchet
+
+0.101   2009-10-21
+        - List Test::Most as a dependency.  Reported by Andreas Koenig at
+          https://rt.cpan.org/Ticket/Display.html?id=50688
+
+0.100   2009-10-18
+        - Production release.
+        - Pod patches from Gabrielle Roth
+          (http://rt.cpan.org/Public/Bug/Display.html?id=46124)
+        - Fixed bug where Test::Most and Test::More clash.
+
+0.02    2008-08-15
+        - Added Test::Differences as a build dependency.
+        - Added a version number to Test::Kit::Features.
+
+0.01    2008-08-14
+        - Basic functionality.  Compose tests and limited test features.

@@ -3,7 +3,7 @@ package MyTest::Simple;
 use strict;
 use warnings;
 
-use Test::Kit2;
+use Test::Kit;
 
 include 'Test::More';
 include 'Test::Warn';

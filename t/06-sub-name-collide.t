@@ -4,7 +4,7 @@ use lib 't/lib';
 
 use Test::More;
 
-# Sub Name Collide - test that Test::Kit2 dies on sub name collisions
+# Sub Name Collide - test that Test::Kit dies on sub name collisions
 
 eval "use MyTest::SubNameCollide;";
 like(

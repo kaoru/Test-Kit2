@@ -2,7 +2,7 @@ use strict;
 use warnings;
 use lib 't/lib';
 
-# Test that Test::Kit2 can be sub-classed
+# Test that Test::Kit can be sub-classed
 
 use MyTest::SubClassUser;
 

@@ -3,7 +3,7 @@ package MyTest::TestBuilderIOLayerUTF8;
 use strict;
 use warnings;
 
-use Test::Kit2;
+use Test::Kit;
 use Test::Builder;
 
 include 'Test::More';
