@@ -1,5 +1,10 @@
 Revision history for Test-Kit
 
+2.01    2014-05-16
+        - Bug fix: don't trigger "already has an import" ourselves
+        - CPAN Testers: set minimum perl version to 5.10.0
+        - Add missing Test::Pod dependency to dist.ini
+
 2.00    2014-05-15
         - Complete rewrite of Test::Kit by Alex Balhatchet
 
