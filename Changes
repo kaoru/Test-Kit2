@@ -1,5 +1,8 @@
 Revision history for Test-Kit
 
+2.02    2014-07-17
+        - Add the fake package to %INC for newer import::into
+
 2.01    2014-05-16
         - Bug fix: don't trigger "already has an import" ourselves
         - CPAN Testers: set minimum perl version to 5.10.0
