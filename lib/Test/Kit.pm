@@ -5,7 +5,7 @@ use warnings;
 
 use namespace::clean ();
 use Import::Into;
-use Module::Runtime 'use_module';
+use Module::Runtime 'use_module', 'module_notional_filename';
 use Sub::Delete;
 
 use parent 'Exporter';
@@ -92,6 +92,9 @@ sub _create_fake_package {
     my $target = $class->_get_package_to_import_into();
 
     my $fake_package = "Test::Kit::Fake::$target\::$package";
+
+    my $fake_package_file = module_notional_filename($fake_package);
+    $INC{$fake_package_file} = 1;
 
     my %exclude = map { $_ => 1 } @{ $package_include_hashref->{exclude} || [] };
     my %rename = %{ $package_include_hashref->{rename} || {} };
