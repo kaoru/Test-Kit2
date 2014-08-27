@@ -1,5 +1,11 @@
 Revision history for Test-Kit
 
+2.10    2014-08-27
+        - Huge overhaul of the internals for Test::Builder::Provider
+        - Still backwards compatible for older versions of Test::Builder
+        - Solved the scalar export issue while I was at it
+        - Thanks to Chad Granum and Karen Etheridge for their help!
+
 2.02    2014-07-17
         - Add the fake package to %INC for newer import::into
 
