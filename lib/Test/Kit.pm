@@ -3,27 +3,27 @@ package Test::Kit;
 use strict;
 use warnings;
 
-use namespace::clean ();
 use Import::Into;
 use Module::Runtime 'use_module', 'module_notional_filename';
 use Sub::Delete;
+use Test::Builder ();
+use Test::More ();
+use Scalar::Util qw(refaddr);
 
 use parent 'Exporter';
 our @EXPORT = ('include');
 
-# deep structure:
-#
-# my %collision_check_cache = (
+# my %test_kits_cache = (
 #     'MyTest::Awesome' => {
-#         'ok' => 'Test::More',
-#         'pass' => 'Test::More',
-#         'warnings_are' => 'Test::Warn',
+#         'ok' => { source => [ 'Test::More' ], refaddr => 0x1234, },
+#         'pass' => { source => [ 'Test::Simple', 'Test::More' ], refaddr => 0xbeef, },
+#         'warnings_are' => { source => [ 'Test::Warn' ], refaddr => 0xbead, },
 #         ...
 #     },
 #     ...
 # )
 #
-my %collision_check_cache;
+my %test_kits_cache;
 
 sub include {
     my @to_include = @_;
@@ -47,14 +47,14 @@ sub _include {
 
     my $target = $class->_get_package_to_import_into();
 
-    $class->_check_target_does_not_import($target);
+    $class->_make_target_a_test_more_like_exporter($target);
 
     for my $package (sort keys %$include_hashref) {
-        my $fake_package = $class->_create_fake_package($package, $include_hashref->{$package});
+        my $fake_package = $class->_create_fake_package($package, $include_hashref->{$package}, $target);
         $fake_package->import::into($target);
     }
 
-    $class->_make_target_an_exporter($target);
+    $class->_update_target_provides($target);
 
     return;
 }
@@ -84,14 +84,51 @@ sub _get_package_to_import_into {
     die "Unable to find package to import into";
 }
 
+sub _make_target_a_test_more_like_exporter {
+    my $class = shift;
+    my $target = shift;
+
+    return if $test_kits_cache{$target};
+
+    $class->_check_target_does_not_import($target);
+
+    {
+        no strict 'refs';
+
+        if ($Test::Builder::VERSION >= 1.3) {
+
+            # if Perl is compiling this branch before TB 1.3 then
+            # Test::More::before_import gets an 'only used once' warning because it
+            # doesn't exist.
+            no warnings 'once';
+
+            *{ "${target}::before_import" } = *Test::More::before_import;
+
+            *{ "${target}::after_import" } = sub {
+                $Exporter::ExportLevel = 1;
+                goto &Exporter::import;
+            };
+
+            use_module('Test::Builder::Provider')->import::into($target);
+        }
+        else {
+            no strict 'refs';
+            push @{ "${target}::ISA" }, 'Test::Builder::Module';
+        }
+    }
+
+    $test_kits_cache{$target} = {};
+
+    return;
+}
+
 sub _create_fake_package {
     my $class = shift;
     my $package = shift;
     my $package_include_hashref = shift;
+    my $target = shift;
 
-    my $target = $class->_get_package_to_import_into();
-
-    my $fake_package = "Test::Kit::Fake::$target\::$package";
+    my $fake_package = "Test::Kit::Fake::${target}::${package}";
 
     my $fake_package_file = module_notional_filename($fake_package);
     $INC{$fake_package_file} = 1;
@@ -101,74 +138,96 @@ sub _create_fake_package {
     my @import = @{ $package_include_hashref->{import} || [] };
 
     use_module($package)->import::into($fake_package, @import);
-    my $functions_exported_by_package = namespace::clean->get_functions($fake_package);
-
-    my @functions_to_install = (
-        (grep { !$exclude{$_} && !$rename{$_} } sort keys %$functions_exported_by_package),
-        (values %rename)
-    );
-
-    my @non_functions_to_install = $class->_get_non_functions_from_package($package);
-
-    $class->_check_collisions(
-        $package,
-        [
-            @functions_to_install,
-            @non_functions_to_install,
-        ]
-    );
 
     {
         no strict 'refs';
         no warnings 'redefine';
 
-        push @{ "$fake_package\::ISA" }, 'Exporter';
-        @{ "$fake_package\::EXPORT" } = (
-            @functions_to_install,
-            @non_functions_to_install
-        );
+        push @{ "${fake_package}::ISA" }, 'Exporter';
 
         for my $from (sort keys %rename) {
             my $to = $rename{$from};
 
             *{ "$fake_package\::$to" } = \&{ "$fake_package\::$from" };
 
-            delete_sub("$fake_package\::$from");
+            delete_sub("${fake_package}::$from");
         }
+
+        for my $exclude (sort keys %exclude) {
+            delete_sub("${fake_package}::$exclude");
+        }
+
+        @{ "${fake_package}::EXPORT" } = $class->_get_exports_for($fake_package, $package, $target, \%rename);
     }
 
     return $fake_package;
 }
 
-sub _check_collisions {
+sub _get_exports_for {
     my $class = shift;
+    my $fake_package = shift;
     my $package = shift;
-    my $functions_to_install = shift;
+    my $target = shift;
+    my $rename = shift;
 
-    my $target = $class->_get_package_to_import_into();
+    # Want to look at each item in the symbol table of
+    # the fake package, and see whether it's the same
+    # (according to refaddr) as the one that was in the
+    # included package. If it is then it was exported
+    # by the package into the fake package.
+    #
+    # We also store the refaddr so that we can check things which are identical
+    # between included packages, and not throw a collision exception in that
+    # case.
+    my %type_to_sigil = ( # please don't export IO or FORMAT! ;-)
+        SCALAR => '$',
+        ARRAY  => '@',
+        HASH   => '%',
+        CODE   => '',
+    );
+    my %reverse_rename = reverse %{ $rename || {} };
+    my @package_exports;
+    {
+        no strict 'refs';
 
-    $collision_check_cache{$target} //= {};
-    for my $function (@$functions_to_install) {
-        if (exists $collision_check_cache{$target}{$function} && $collision_check_cache{$target}{$function} ne $package) {
-            die sprintf("Subroutine %s() already supplied to %s by %s",
-                $function,
-                $target,
-                $collision_check_cache{$target}{$function},
-            );
-        }
-        else {
-            $collision_check_cache{$target}{$function} = $package;
+        for my $glob (keys %{ "${fake_package}::" }) {
+
+            my $fake_glob = $glob;
+            my $real_glob = $reverse_rename{$glob} // $glob;
+
+            for my $type (keys %type_to_sigil) {
+                my $fake_refaddr = refaddr *{ "${fake_package}::${fake_glob}" }{$type};
+                my $real_refaddr = refaddr *{ "${package}::${real_glob}" }{$type};
+
+                if ($fake_refaddr && $real_refaddr && $fake_refaddr == $real_refaddr) {
+                    my $export = sprintf("%s%s", $type_to_sigil{$type}, $fake_glob);
+                    push @package_exports, $export;
+
+                    # handle cache and collision checking
+                    push @{ $test_kits_cache{$target}{$export}{source} }, $package;
+                    if (my $existing_refaddr = $test_kits_cache{$target}{$export}{refaddr}) {
+                        if ($existing_refaddr != $real_refaddr) {
+                            die sprintf("Subroutine %s() already supplied to %s by %s",
+                                $export,
+                                $target,
+                                $test_kits_cache{$target}{$export}{source}[0],
+                            );
+                        }
+                    }
+                    else {
+                        $test_kits_cache{$target}{$export}{refaddr} = $real_refaddr;
+                    }
+                }
+            }
         }
     }
 
-    return;
+    return @package_exports;
 }
 
 sub _check_target_does_not_import {
     my $class = shift;
     my $target = shift;
-
-    return if $collision_check_cache{$target}; # already checked
 
     if ($target->can('import')) {
         die "Package $target already has an import() sub";
@@ -177,67 +236,33 @@ sub _check_target_does_not_import {
     return;
 }
 
-sub _make_target_an_exporter {
+sub _update_target_provides {
     my $class = shift;
     my $target = shift;
 
-    my @functions_to_install = sort keys %{ $collision_check_cache{$target} // {} };
+    my @exports = sort keys %{ $test_kits_cache{$target} };
 
     {
         no strict 'refs';
-        push @{ "$target\::ISA" }, 'Test::Builder::Module';
-        @{ "$target\::EXPORT" } = @functions_to_install;
-    }
 
-    return;
-}
+        if ($Test::Builder::VERSION >= 1.3) {
 
-sub _get_non_functions_from_package {
-    my $class = shift;
-    my $package = shift;
+            @{ "${target}::EXPORT" } = @exports;
 
-    # Unfortunately we can't do the "correct" thing here, which would be to
-    # walk the symbol table of the fake package to find the non-sub variables
-    # exported by the included package.
-    #
-    # This is because the most common case we're trying to handle is the
-    # '$TODO' variable from Test::More, but it's impossible to catch that in
-    # the fake package symbol table because every symbol table entry has a
-    # scalar no matter what. ie the following two packages are indistinguishable:
-    #
-    # 1.
-    #     package foo;
-    #     our $x = undef;
-    #     our @x = qw(a b c);
-    #
-    # 2.
-    #     package foo;
-    #     our @x = qw(a b c);
-    #
-    # One option would be to import '$VAR' if VAR is in the symbol table and
-    # has no CODE, ARRAY, or HASH entry. But that breaks down if a package is
-    # trying to export both '$VAR' and '@VAR'.
-    #
-    # So, instead of all that I'm going to simply assume that the package is an
-    # Exporter and walk its @EXPORT array for things which start with '$', '@'
-    # or '%'. This at least will work for the $Test::More::TODO case.
-    #
-
-    my @non_functions;
-
-    my @package_export;
-    {
-        no strict 'refs';
-        @package_export = @{ "$package\::EXPORT" };
-    }
-
-    for my $e (@package_export) {
-        if ($e =~ m/^[\$\@\%]/) {
-            push @non_functions, $e;
+            for my $e (@exports) {
+                next if $e =~ m/^[\$\@\%]/;
+                eval "package $target; provides '$e';";
+                if ($@ && $@ !~ m/already provides or gives/) {
+                    die sprintf("Failed to provide %s to %s: %s",
+                        $e, $target, $@
+                    );
+                }
+            }
+        }
+        else {
+            @{ "$target\::EXPORT" } = @exports;
         }
     }
-
-    return @non_functions;
 }
 
 1;
@@ -351,33 +376,22 @@ Test::Builder::Module is an Exporter, so if you want to define your own
 subroutines and export those you can push onto @EXPORT after all the calls to
 include().
 
-=head1 ISSUES
+=head2 Failed to provide %s to %s: %s
 
-=head2 Non-subroutine Exports
+This happens when working under a Test::Builder new enough to support the
+provides() mechanism, when something has failed to be provided for some reason.
 
-For subroutine exports we are able to know exactly what subroutines are
-exported by using a given module using a combination of Import::Into and
-namespace::clean. Unfortunately the same trick does not work for exported
-SCALARs.
+I don't know yet of any reason why this might happen. If it happens for you
+please get in touch!
 
-This is because the most common case we're trying to handle is the '$TODO'
-variable from Test::More, but it's impossible to catch that in the symbol table
-because every symbol table entry has a scalar no matter what. ie the following
-two packages are indistinguishable:
+=head1 COMPATIBILITY
 
-    # One
-    package foo;
-    our $x = undef;
-    our @x = qw(a b c);
+Test::Kit 2.1 and above should work with Test::Builder 1.3 and above (with
+Test::Builder::Provider) and with older versions which still use
+Test::Builder::Module.
 
-    # Two
-    package foo;
-    our @x = qw(a b c);
-
-So, instead, Test::Kit simply assumes that the package is an Exporter and walks
-its @EXPORT array for things which start with '$', '@' or '%'.
-
-This at least works for the $Test::More::TODO case, which is the most common.
+Huge thanks to Chad Granum and Karen Etheridge for all their help with the
+Test::Builder::Provider support.
 
 =head1 SEE ALSO
 
@@ -387,8 +401,8 @@ L<ToolSet> - Load your commonly-used modules in a single import
 
 L<Import::Base> - Import a set of modules into the calling module
 
-Test::Kit largely differs from these in that it always makes your module a
-Test::Builder::Module, so that it can behave like Test::More.
+Test::Kit largely differs from these in that it always makes your module behave
+like Test::More.
 
 =head1 AUTHOR
 
