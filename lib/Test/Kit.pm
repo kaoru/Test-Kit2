@@ -95,8 +95,15 @@ sub _make_target_a_test_more_like_exporter {
     {
         no strict 'refs';
 
-        if ($Test::Builder::VERSION >= 1.3) {
-
+        if ($Test::Builder::VERSION >= 1.301001082) {
+            no strict 'refs';
+            push @{ "${target}::ISA" }, 'Test::Stream::Toolset';
+            use_module('Test::Stream::Toolset')->import::into($target, qw(is_tester init_tester context before_import));
+        }
+        elsif ($Test::Builder::VERSION >= 1.301001079) {
+            die "Test::Builder $Test::Builder::VERSION is not supported. Upgrade or downgrade please.";
+        }
+        elsif ($Test::Builder::VERSION >= 1.3) {
             # if Perl is compiling this branch before TB 1.3 then
             # Test::More::before_import gets an 'only used once' warning because it
             # doesn't exist.
@@ -245,7 +252,7 @@ sub _update_target_provides {
     {
         no strict 'refs';
 
-        if ($Test::Builder::VERSION >= 1.3) {
+        if ($Test::Builder::VERSION >= 1.3 && $Test::Builder::VERSION < 1.301001079) {
 
             @{ "${target}::EXPORT" } = @exports;
 
