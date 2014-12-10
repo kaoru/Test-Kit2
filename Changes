@@ -1,5 +1,10 @@
 Revision history for Test-Kit
 
+2.11    2014-12-10
+        - Support for the latest Test::Builder dev release using
+          Test::Stream::Toolset to make Test::Kit work. Lovely.
+        - Thanks once again to Chad Granum for his support!
+
 2.10    2014-08-27
         - Huge overhaul of the internals for Test::Builder::Provider
         - Still backwards compatible for older versions of Test::Builder
