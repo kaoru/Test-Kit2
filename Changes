@@ -1,5 +1,13 @@
 Revision history for Test-Kit
 
+2.12    2014-12-10
+        - Let's just pretend 2.11 never happened shall we...
+        - Remove support for the experimental Test::Builder::Provider-based
+          version of Test::Builder. It'll never go stable, and nobody uses it!
+        - Fix up the $Test::Builder::VERSION checks so that they will work when
+          Test::Builder 1.301001 becomes the stable release
+        - Thanks again Chad!
+
 2.11    2014-12-10
         - Support for the latest Test::Builder dev release using
           Test::Stream::Toolset to make Test::Kit work. Lovely.
