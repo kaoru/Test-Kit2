@@ -93,12 +93,9 @@ sub _make_target_a_test_more_like_exporter {
     $class->_check_target_does_not_import($target);
 
     {
-        no strict 'refs';
-
         if ($Test::Builder::VERSION >= 1.301001) {
-            no strict 'refs';
-            push @{ "${target}::ISA" }, 'Test::Stream::Toolset';
-            use_module('Test::Stream::Toolset')->import::into($target, qw(is_tester init_tester context before_import));
+            Test::Stream::Exporter->export_to($target);
+            Test::Stream::Toolset->export_to($target, qw(is_tester init_tester context before_import));
         }
         else {
             no strict 'refs';
