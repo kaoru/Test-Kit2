@@ -358,11 +358,11 @@ please get in touch!
 =head1 COMPATIBILITY
 
 Test::Kit 2.1 and above should work with Test::Builder 1.3 and above (with
-Test::Builder::Provider) and with older versions which still use
+Test::Stream::Toolset/Exporter) and with older versions which still use
 Test::Builder::Module.
 
 Huge thanks to Chad Granum and Karen Etheridge for all their help with the
-Test::Builder::Provider support.
+Test::Builder 1.3 support.
 
 =head1 SEE ALSO
 
