@@ -54,7 +54,7 @@ sub _include {
         $fake_package->import::into($target);
     }
 
-    $class->_update_target_provides($target);
+    $class->_update_target_exports($target);
 
     return;
 }
@@ -222,7 +222,7 @@ sub _check_target_does_not_import {
     return;
 }
 
-sub _update_target_provides {
+sub _update_target_exports {
     my $class = shift;
     my $target = shift;
 
@@ -346,14 +346,6 @@ specifically it is going to install Test::Builder::Module's import() method.
 Test::Builder::Module is an Exporter, so if you want to define your own
 subroutines and export those you can push onto @EXPORT after all the calls to
 include().
-
-=head2 Failed to provide %s to %s: %s
-
-This happens when working under a Test::Builder new enough to support the
-provides() mechanism, when something has failed to be provided for some reason.
-
-I don't know yet of any reason why this might happen. If it happens for you
-please get in touch!
 
 =head1 COMPATIBILITY
 
