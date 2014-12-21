@@ -1,5 +1,3 @@
-use strict;
-use warnings;
 use lib 't/lib';
 
 # Put it all together - test that all the features work together

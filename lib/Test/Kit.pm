@@ -9,10 +9,10 @@ use Sub::Delete;
 use Test::Builder ();
 use Test::More ();
 use Scalar::Util qw(refaddr);
+use Hook::LexWrap qw(wrap);
 
 use parent 'Exporter';
 our @EXPORT = ('include');
-
 # my %test_kits_cache = (
 #     'MyTest::Awesome' => {
 #         'ok' => { source => [ 'Test::More' ], refaddr => 0x1234, },
@@ -50,8 +50,42 @@ sub _include {
     $class->_make_target_a_test_more_like_exporter($target);
 
     for my $package (sort keys %$include_hashref) {
-        my $fake_package = $class->_create_fake_package($package, $include_hashref->{$package}, $target);
-        $fake_package->import::into($target);
+        # special cases for strict and warnings
+        #
+        # The logic here is copied from Moose which always causes strict and
+        # warnings to be enabled when it is used.
+        #
+        # A comment in Moose::Exporter states:
+        #
+        # "this works because both pragmas set $^H (see perldoc perlvar) which
+        # affects the current compilation - i.e. the file who use'd us - which
+        # is why we don't need to do anything special to make it affect that
+        # file rather than this one (which is already compiled)"
+        #
+        # In the Moose code the author simply calls strict->import() in the
+        # appropriate import() method and that does the trick. For us working
+        # at a bit more of a distance we have to be a bit trickier - adding
+        # strict->import() or warnings->import() to the import method on the
+        # target class. We do that by wrapping it with Hook::LexWrap::wrap().
+        #
+        # TODO see if there's a reason for the 1.1 vs 1.3 difference, and find
+        # a way to avoid the if statement here.
+        #
+        # TODO see whether any other pragmata need to be added to the list
+        # along with strict and warnings.
+        #
+        if ($package eq 'strict' || $package eq 'warnings') {
+            if ($Test::Builder::VERSION >= 1.301001) {
+                wrap "${target}::before_import", post => sub { $package->import(); };
+            }
+            else {
+                wrap "${target}::import", post => sub { $package->import(); };
+            }
+        }
+        else {
+            my $fake_package = $class->_create_fake_package($package, $include_hashref->{$package}, $target);
+            $fake_package->import::into($target);
+        }
     }
 
     $class->_update_target_exports($target);
@@ -100,6 +134,11 @@ sub _make_target_a_test_more_like_exporter {
         else {
             no strict 'refs';
             push @{ "${target}::ISA" }, 'Test::Builder::Module';
+
+            # need to explicitly do this so that if we need to wrap import()
+            # for strict and warnings includes it already exists at the right
+            # point.
+            *{ "${target}::import" } = \&Test::Builder::Module::import;
         }
     }
 
@@ -294,10 +333,11 @@ Somewhere in your project...
         import => [ 'min', 'max', 'shuffle' ],
     };
 
-And then in your test files...
+    # Include pragmata in your kit
 
-    use strict;
-    use warnings;
+    include 'strict', 'warnings';
+
+And then in your test files...
 
     use MyProject::Test tests => 4;
 
