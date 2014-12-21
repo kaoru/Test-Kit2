@@ -1,5 +1,18 @@
 Revision history for Test-Kit
 
+2.13    2014-12-21
+        - Add support and tests for including 'strict' and 'warnings' pragmata
+          in test kits. Not sure this is the best implementation, but it seems
+          to work on a wide range of Perl versions and Test::Builder versions
+          so I'm calling it good enough, until CPAN Testers or bug reports tell
+          me otherwise.
+        - Unfortunately had to add a new dependency on Hook::LexWrap for
+          strict/warnings support.
+        - Small POD change where I still accidentally referenced the obsolete
+          Provider stuff.
+        - Couple new tests proving that test kits can do things they already
+          could do.
+
 2.12    2014-12-10
         - Let's just pretend 2.11 never happened shall we...
         - Remove support for the experimental Test::Builder::Provider-based
