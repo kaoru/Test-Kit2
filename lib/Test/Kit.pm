@@ -68,19 +68,11 @@ sub _include {
         # strict->import() or warnings->import() to the import method on the
         # target class. We do that by wrapping it with Hook::LexWrap::wrap().
         #
-        # TODO see if there's a reason for the 1.1 vs 1.3 difference, and find
-        # a way to avoid the if statement here.
-        #
         # TODO see whether any other pragmata need to be added to the list
         # along with strict and warnings.
         #
         if ($package eq 'strict' || $package eq 'warnings') {
-            if ($Test::Builder::VERSION >= 1.301001) {
-                wrap "${target}::before_import", post => sub { $package->import(); };
-            }
-            else {
-                wrap "${target}::import", post => sub { $package->import(); };
-            }
+            wrap "${target}::import", post => sub { $package->import(); };
         }
         else {
             my $fake_package = $class->_create_fake_package($package, $include_hashref->{$package}, $target);
@@ -127,19 +119,13 @@ sub _make_target_a_test_more_like_exporter {
     $class->_check_target_does_not_import($target);
 
     {
-        if ($Test::Builder::VERSION >= 1.301001) {
-            Test::Stream::Exporter->export_to($target);
-            Test::Stream::Toolset->export_to($target, qw(is_tester init_tester context before_import));
-        }
-        else {
-            no strict 'refs';
-            push @{ "${target}::ISA" }, 'Test::Builder::Module';
+        no strict 'refs';
+        push @{ "${target}::ISA" }, 'Test::Builder::Module';
 
-            # need to explicitly do this so that if we need to wrap import()
-            # for strict and warnings includes it already exists at the right
-            # point.
-            *{ "${target}::import" } = \&Test::Builder::Module::import;
-        }
+        # need to explicitly do this so that if we need to wrap import()
+        # for strict and warnings includes it already exists at the right
+        # point.
+        *{ "${target}::import" } = \&Test::Builder::Module::import;
     }
 
     $test_kits_cache{$target} = {};
