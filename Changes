@@ -1,5 +1,10 @@
 Revision history for Test-Kit
 
+2.14    2015-11-26
+        - Remove special cases for Test::Builder 1.3 - they are no longer
+          needed for Test::Kit to work under the latest DEV release of
+          Test::Builder/Test::Stream :-)
+
 2.13    2014-12-21
         - Add support and tests for including 'strict' and 'warnings' pragmata
           in test kits. Not sure this is the best implementation, but it seems
