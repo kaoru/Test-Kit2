@@ -50,7 +50,7 @@ sub _include {
     $class->_make_target_a_test_more_like_exporter($target);
 
     for my $package (sort keys %$include_hashref) {
-        # special cases for strict and warnings
+        # special cases for strict and warnings on pre-1.3 Test::Builder
         #
         # The logic here is copied from Moose which always causes strict and
         # warnings to be enabled when it is used.
@@ -68,10 +68,7 @@ sub _include {
         # strict->import() or warnings->import() to the import method on the
         # target class. We do that by wrapping it with Hook::LexWrap::wrap().
         #
-        # TODO see whether any other pragmata need to be added to the list
-        # along with strict and warnings.
-        #
-        if ($package eq 'strict' || $package eq 'warnings') {
+        if ($Test::Builder::VERSION < 1.3 && ($package eq 'strict' || $package eq 'warnings')) {
             wrap "${target}::import", post => sub { $package->import(); };
         }
         else {
