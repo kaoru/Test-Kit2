@@ -372,12 +372,9 @@ include().
 
 =head1 COMPATIBILITY
 
-Test::Kit 2.1 and above should work with Test::Builder 1.3 and above (with
-Test::Stream::Toolset/Exporter) and with older versions which still use
-Test::Builder::Module.
-
-Huge thanks to Chad Granum and Karen Etheridge for all their help with the
-Test::Builder 1.3 support.
+Test::Kit 2.15 and above should work with Test-Simple 1.0 and 1.3 releases.
+Huge thanks to Chad Granum and Karen Etheridge for all their help with 1.3
+support. I highly recommend upgrading to Test-Simple 1.3.
 
 =head1 SEE ALSO
 
