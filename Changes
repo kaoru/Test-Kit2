@@ -1,5 +1,10 @@
 Revision history for Test-Kit
 
+2.15    2016-06-06
+        - Add back one Test-Simple 1.3 special case for strict/warnings
+        - Remove Test::Aggregate tests
+        - Update POD
+
 2.14    2015-11-26
         - Remove special cases for Test::Builder 1.3 - they are no longer
           needed for Test::Kit to work under the latest DEV release of
