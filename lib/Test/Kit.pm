@@ -237,7 +237,9 @@ sub _check_target_does_not_import {
     my $class = shift;
     my $target = shift;
 
-    if ($target->can('import')) {
+    my $import = $target->can('import');
+    my $uniimport = UNIVERSAL->can('import');
+    if ($import && !($uniimport && $import == $uniimport)) {
         die "Package $target already has an import() sub";
     }
 
